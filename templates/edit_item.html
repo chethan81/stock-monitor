@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Item - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<h1>✏️ Edit Item: {{ item.name }}</h1>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="name">Item Name:</label>
+            <input type="text" id="name" name="name" value="{{ item.name }}" required autofocus>
+        </div>
+        
+        <div class="form-group">
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity" value="{{ item.quantity }}" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="initial_price">Initial Price ($):</label>
+            <input type="number" id="initial_price" name="initial_price" step="0.01" value="{{ "%.2f"|format(item.initial_price) }}" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="selling_price">Selling Price ($):</label>
+            <input type="number" id="selling_price" name="selling_price" step="0.01" value="{{ "%.2f"|format(item.selling_price) }}" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description">{{ item.description }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="image">Item Image:</label>
+            <input type="file" id="image" name="image" accept="image/*" capture="camera">
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Leave empty to keep current image, or upload a new one.
+            </small>
+            {% if item.image_path %}
+                <div style="margin-top: 10px;">
+                    <p style="font-size: 14px; color: #666;">Current image:</p>
+                    <img src="{{ url_for('static', filename=item.image_path.replace('static/', '')) }}" alt="{{ item.name }}" style="max-width: 200px; border-radius: 5px; border: 1px solid #ddd;">
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">💾 Update Item</button>
+            <a href="{{ url_for('items') }}" class="btn btn-danger">❌ Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

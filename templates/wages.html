@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Wages - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>💵 Wages Management</h1>
+    <a href="{{ url_for('add_wage') }}" class="btn btn-success">➕ Add Wage Payment</a>
+</div>
+
+<div class="card">
+    <h2>Wages Summary</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">${{ "%.2f"|format(total_wages) }}</div>
+            <div class="stat-label">Total Wages Paid</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-value">{{ wages | length }}</div>
+            <div class="stat-label">Total Wage Payments</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-value">${{ "%.2f"|format((total_wages / wages | length) if wages | length > 0 else 0) }}</div>
+            <div class="stat-label">Average Payment</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-value">{{ wages | selectattr('wage_type', 'equalto', 'salary') | list | length }}</div>
+            <div class="stat-label">Salary Payments</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Wage Payment History</h2>
+    {% if wages %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wage in wages %}
+                <tr>
+                    <td><strong>{{ wage.employee_name }}</strong></td>
+                    <td style="font-weight: bold; color: #e74c3c;">${{ "%.2f"|format(wage.amount) }}</td>
+                    <td>
+                        {% if wage.wage_type == 'salary' %}
+                            <span style="color: #667eea; font-weight: bold;">💼 Salary</span>
+                        {% elif wage.wage_type == 'hourly' %}
+                            <span style="color: #27ae60; font-weight: bold;">⏰ Hourly</span>
+                        {% elif wage.wage_type == 'bonus' %}
+                            <span style="color: #f39c12; font-weight: bold;">🎁 Bonus</span>
+                        {% else %}
+                            <span style="color: #666; font-weight: bold;">💵 Other</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ wage.description }}</td>
+                    <td>{{ wage.created_at[:19].replace('T', ' ') }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_wage', id=wage.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this wage payment?')">
+                            <button type="submit" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">🗑️ Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <h3>📊 Wage Analysis</h3>
+            {% set salary_total = wages | selectattr('wage_type', 'equalto', 'salary') | map(attribute='amount') | sum %}
+            {% set hourly_total = wages | selectattr('wage_type', 'equalto', 'hourly') | map(attribute='amount') | sum %}
+            {% set bonus_total = wages | selectattr('wage_type', 'equalto', 'bonus') | map(attribute='amount') | sum %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <strong>Salary Total:</strong> <span style="color: #667eea;">${{ "%.2f"|format(salary_total) }}</span>
+                </div>
+                <div>
+                    <strong>Hourly Total:</strong> <span style="color: #27ae60;">${{ "%.2f"|format(hourly_total) }}</span>
+                </div>
+                <div>
+                    <strong>Bonus Total:</strong> <span style="color: #f39c12;">${{ "%.2f"|format(bonus_total) }}</span>
+                </div>
+                <div>
+                    <strong>Grand Total:</strong> <span style="color: #e74c3c; font-weight: bold;">${{ "%.2f"|format(total_wages) }}</span>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">💵</div>
+            <h3>No wage payments recorded yet</h3>
+            <p style="color: #666;">Start tracking employee wages and payments.</p>
+            <a href="{{ url_for('add_wage') }}" class="btn btn-success" style="margin-top: 20px;">➕ Add First Wage Payment</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

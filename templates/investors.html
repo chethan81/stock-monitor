@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Investors - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>👥 Investors</h1>
+    <a href="{{ url_for('add_investment') }}" class="btn btn-success">➕ Add Investor</a>
+</div>
+
+<div class="card">
+    {% if investors %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Total Invested</th>
+                    <th>Total Withdrawn</th>
+                    <th>Balance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for investor in investors %}
+                <tr>
+                    <td><strong>{{ investor.name }}</strong></td>
+                    <td>
+                        <a href="mailto:{{ investor.email }}" style="color: #667eea;">{{ investor.email }}</a>
+                    </td>
+                    <td>{{ investor.phone }}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${{ "%.2f"|format(investor.total_invested) }}</td>
+                    <td style="color: #e74c3c; font-weight: bold;">${{ "%.2f"|format(investor.total_withdrawn) }}</td>
+                    <td style="color: {% if investor.balance >= 0 %}#27ae60{% else %}#e74c3c{% endif %}; font-weight: bold;">
+                        ${{ "%.2f"|format(investor.balance) }}
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('investor_ledger', name=investor.name) }}" class="btn" style="padding: 5px 10px; font-size: 12px;">📊 Ledger</a>
+                            <a href="{{ url_for('investment') }}" class="btn" style="padding: 5px 10px; font-size: 12px;">✏️ Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <h3>📊 Investors Summary</h3>
+            {% set total_invested = investors | sum(attribute='total_invested') %}
+            {% set total_withdrawn = investors | sum(attribute='total_withdrawn') %}
+            {% set total_balance = investors | sum(attribute='balance') %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <strong>Total Investors:</strong> {{ investors | length }}
+                </div>
+                <div>
+                    <strong>Total Invested:</strong> <span style="color: #27ae60;">${{ "%.2f"|format(total_invested) }}</span>
+                </div>
+                <div>
+                    <strong>Total Withdrawn:</strong> <span style="color: #e74c3c;">${{ "%.2f"|format(total_withdrawn) }}</span>
+                </div>
+                <div>
+                    <strong>Net Balance:</strong> <span style="color: {% if total_balance >= 0 %}#27ae60{% else %}#e74c3c{% endif %};">${{ "%.2f"|format(total_balance) }}</span>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">👥</div>
+            <h3>No investors yet</h3>
+            <p style="color: #666;">Start adding investment transactions to see your investors here.</p>
+            <a href="{{ url_for('add_investment') }}" class="btn btn-success" style="margin-top: 20px;">➕ Add First Investor</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

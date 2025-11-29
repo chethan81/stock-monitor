@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Add Wage Payment - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<h1>💵 Add Wage Payment</h1>
+
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label for="employee_name">Employee Name:</label>
+            <input type="text" id="employee_name" name="employee_name" required autofocus placeholder="John Doe">
+        </div>
+        
+        <div class="form-group">
+            <label for="amount">Amount ($):</label>
+            <input type="number" id="amount" name="amount" step="0.01" min="0.01" required placeholder="1500.00">
+        </div>
+        
+        <div class="form-group">
+            <label for="wage_type">Wage Type:</label>
+            <select id="wage_type" name="wage_type" required>
+                <option value="">Select wage type...</option>
+                <option value="salary">💼 Salary</option>
+                <option value="hourly">⏰ Hourly</option>
+                <option value="bonus">🎁 Bonus</option>
+                <option value="other">💵 Other</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" placeholder="Enter payment details..." required></textarea>
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Describe the purpose of this wage payment (e.g., "Monthly salary for December", "Overtime hours", "Performance bonus", etc.)
+            </small>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">💵 Record Payment</button>
+            <a href="{{ url_for('wages') }}" class="btn btn-danger">❌ Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+    <h3>💡 Wage Types</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 10px;">
+        <div>
+            <h4 style="color: #667eea;">💼 Salary</h4>
+            <p style="font-size: 14px; color: #666;">Regular monthly or annual salary payments.</p>
+            <ul style="font-size: 14px; color: #666; margin-top: 5px;">
+                <li>Monthly salary</li>
+                <li>Annual salary</li>
+                <li>Base pay</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #27ae60;">⏰ Hourly</h4>
+            <p style="font-size: 14px; color: #666;">Payments based on hours worked.</p>
+            <ul style="font-size: 14px; color: #666; margin-top: 5px;">
+                <li>Hourly wages</li>
+                <li>Overtime pay</li>
+                <li>Part-time work</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #f39c12;">🎁 Bonus</h4>
+            <p style="font-size: 14px; color: #666;">Additional compensation beyond regular pay.</p>
+            <ul style="font-size: 14px; color: #666; margin-top: 5px;">
+                <li>Performance bonus</li>
+                <li>Year-end bonus</li>
+                <li>Project bonus</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #666;">💵 Other</h4>
+            <p style="font-size: 14px; color: #666;">Any other type of wage payment.</p>
+            <ul style="font-size: 14px; color: #666; margin-top: 5px;">
+                <li>Commission</li>
+                <li>Consulting fees</li>
+                <li>Contract payments</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

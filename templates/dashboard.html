@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1>Welcome, {{ username }}! 👋</h1>
+    <p style="color: #666;">Here's your stock management overview</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_items }}</div>
+        <div class="stat-label">Total Items in Stock</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">${{ "%.2f"|format(current_stock_value) }}</div>
+        <div class="stat-label">Current Stock Value</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">${{ "%.2f"|format(expected_revenue) }}</div>
+        <div class="stat-label">Expected Revenue</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Quick Actions</h2>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+        <a href="{{ url_for('add_item') }}" class="btn btn-success">➕ Add Item</a>
+        <a href="{{ url_for('items') }}" class="btn">📦 View Items</a>
+        <a href="{{ url_for('sales') }}" class="btn">💰 View Sales</a>
+        <a href="{{ url_for('wages') }}" class="btn">💵 Manage Wages</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">🚪 Logout</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Recently Added Items</h2>
+    {% if recent_items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Selling Price</th>
+                    <th>Added Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recent_items %}
+                <tr>
+                    <td>
+                        {% if item.image_path %}
+                            <img src="{{ url_for('static', filename=item.image_path.replace('static/', '')) }}" alt="{{ item.name }}" class="thumbnail">
+                        {% else %}
+                            <div class="thumbnail" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">📦</div>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ item.name }}</strong></td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ "%.2f"|format(item.selling_price) }}</td>
+                    <td>{{ item.created_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align: center; color: #666;">No items added yet. <a href="{{ url_for('add_item') }}">Add your first item!</a></p>
+    {% endif %}
+</div>
+{% endblock %}

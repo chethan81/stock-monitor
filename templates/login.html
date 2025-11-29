@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 0 auto;">
+    <h1>🔐 Login</h1>
+    <p style="color: #666; text-align: center;">Welcome back to Stock Monitoring System</p>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('auth_login') }}">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required autofocus placeholder="Enter your username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success" style="flex: 1;">🔐 Login</button>
+                <a href="{{ url_for('register') }}" class="btn btn-primary" style="flex: 1;">👤 Register</a>
+            </div>
+        </form>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="color: #666;">
+                <a href="{{ url_for('forgot_password') }}" style="color: #3498db;">Forgot Password?</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

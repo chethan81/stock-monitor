@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Sales - Stock Monitoring System{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>💰 Sales Management</h1>
+    <a href="{{ url_for('items') }}" class="btn btn-success">📦 View All Items</a>
+</div>
+
+<div class="card">
+    <h2>📦 Available Items for Sale</h2>
+    {% if available_items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Item Name</th>
+                    <th>Available Quantity</th>
+                    <th>Selling Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in available_items %}
+                <tr>
+                    <td>
+                        {% if item.image_path %}
+                            <img src="{{ url_for('static', filename=item.image_path.replace('static/', '')) }}" alt="{{ item.name }}" class="thumbnail">
+                        {% else %}
+                            <div class="thumbnail" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">📦</div>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ item.name }}</strong></td>
+                    <td>
+                        {{ item.quantity }}
+                        {% if item.quantity == 0 %}
+                            <span style="color: #e74c3c; font-size: 12px;">(Out of Stock)</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ "%.2f"|format(item.selling_price) }}</td>
+                    <td>
+                        {% if item.quantity > 0 %}
+                            <a href="{{ url_for('sell_item', id=item.id) }}" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">🛒 Sell</a>
+                        {% else %}
+                            <span style="color: #999; font-size: 12px;">Out of Stock</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align: center; color: #666;">No items available for sale.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Sales History</h2>
+    {% if sales %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Item Details</th>
+                    <th>Sold By</th>
+                    <th>Place</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td>
+                        {% if sale.sale_image_path %}
+                            <img src="{{ url_for('static', filename=sale.sale_image_path.replace('static/', '')) }}" alt="{{ sale.item_name }}" class="thumbnail" title="Sale Image">
+                        {% elif sale.image_path %}
+                            <img src="{{ url_for('static', filename=sale.image_path.replace('static/', '')) }}" alt="{{ sale.item_name }}" class="thumbnail" title="Original Item Image">
+                        {% else %}
+                            <div class="thumbnail" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">💰</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ sale.item_name }}</strong>
+                        {% if sale.user_email %}
+                            <br><small style="color: #666;">📧 {{ sale.user_email }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            {% if sale.user_name %}
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <div style="width: 30px; height: 30px; border-radius: 50%; background-color: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                        {{ sale.user_name[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ sale.user_name }}</strong>
+                                        {% if session.username == 'admin' %}
+                                            <br><small style="color: #666;">ID: {{ sale.user_id }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span style="color: #999;">Unknown User</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if sale.place %}
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <span style="color: #e67e22;">📍</span>
+                                <span>{{ sale.place }}</span>
+                            </div>
+                        {% else %}
+                            <span style="color: #999;">Not specified</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ sale.quantity_sold }}</td>
+                    <td>${{ "%.2f"|format(sale.selling_price) }}</td>
+                    <td style="font-weight: bold; color: #27ae60;">${{ "%.2f"|format(sale.total_amount) }}</td>
+                    <td>{{ sale.sold_at[:19].replace('T', ' ') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <h3>📊 Sales Summary</h3>
+            {% set total_revenue = sales | sum(attribute='total_amount') %}
+            <p><strong>Total Sales Revenue:</strong> <span style="color: #27ae60; font-size: 18px;">${{ "%.2f"|format(total_revenue) }}</span></p>
+            <p><strong>Total Items Sold:</strong> {{ sales | sum(attribute='quantity_sold') }}</p>
+            <p><strong>Number of Sales:</strong> {{ sales | length }}</p>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">💰</div>
+            <h3>No sales recorded yet</h3>
+            <p style="color: #666;">Start selling items to see your sales history here.</p>
+            <a href="{{ url_for('items') }}" class="btn btn-success" style="margin-top: 20px;">📦 View Items to Sell</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
