@@ -25,11 +25,8 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db():
-    # For Render, use absolute path
-    if os.environ.get('RENDER'):
-        db_path = '/opt/render/project/src/database.db'
-    else:
-        db_path = DATABASE_PATH
+    # Use fixed path for Render, local path for development
+    db_path = '/opt/render/project/src/database.db'
     
     # Ensure database directory exists
     db_dir = os.path.dirname(db_path)
