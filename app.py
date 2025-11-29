@@ -62,6 +62,14 @@ def index():
 def login():
     return render_template('login.html')
 
+@app.route('/forgot-password')
+def forgot_password():
+    return render_template('forgot_password.html')
+
+@app.route('/register')
+def register():
+    return render_template('register.html')
+
 @app.route('/auth/login', methods=['POST'])
 def auth_login():
     username = request.form['username']
