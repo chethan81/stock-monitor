@@ -21,12 +21,23 @@ def allowed_file(filename):
 
 # Database with persistent storage
 def get_db():
-    try:
-        # Try to use persistent storage
-        conn = sqlite3.connect('/tmp/stock_monitor.db')
-        conn.row_factory = sqlite3.Row
-    except:
-        # Fallback to in-memory
+    # Try multiple paths for persistent storage
+    paths = [
+        '/tmp/stock_monitor.db',
+        '/opt/render/project/src/stock_monitor.db',
+        'stock_monitor.db'
+    ]
+    
+    conn = None
+    for path in paths:
+        try:
+            conn = sqlite3.connect(path)
+            conn.row_factory = sqlite3.Row
+            break
+        except:
+            continue
+    
+    if not conn:
         conn = sqlite3.connect(':memory:')
         conn.row_factory = sqlite3.Row
     
