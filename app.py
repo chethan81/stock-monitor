@@ -11,7 +11,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # Global database connection for persistence
-DATABASE_FILE = '/tmp/stock_monitor.db'
+DATABASE_FILE = os.path.join(os.getcwd(), 'stock_monitor.db')  # Use current directory
 
 def init_database():
     """Initialize database with tables and admin user"""
@@ -44,6 +44,8 @@ def init_database():
                 image_path TEXT,
                 total_initial_value REAL,
                 current_stock_value REAL,
+                initial_price REAL,
+                added_by INTEGER,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -123,6 +125,10 @@ def init_database():
     except Exception as e:
         print(f"Database initialization error: {str(e)}")
         raise e
+
+def format_currency(amount):
+    """Format amount with rupee symbol"""
+    return f"₹{amount:,.2f}"
 
 def get_db():
     """Get database connection"""
@@ -295,7 +301,12 @@ def items():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM stock_items ORDER BY created_at DESC')
+        cursor.execute('''
+            SELECT si.*, u.username as added_by_username 
+            FROM stock_items si 
+            LEFT JOIN users u ON si.added_by = u.id 
+            ORDER BY si.created_at DESC
+        ''')
         items_list = cursor.fetchall()
         conn.close()
         return render_template('items.html', items=items_list)
@@ -315,18 +326,23 @@ def add_item():
             selling_price = float(request.form['selling_price'])
             description = request.form.get('description', '')
             
+            # Calculate initial price (admin only)
+            initial_price = 0.0
+            if session.get('username') == 'admin':
+                initial_price = float(request.form.get('initial_price', 0.0))
+            
             # Calculate values
-            total_initial_value = quantity * selling_price
+            total_initial_value = quantity * initial_price if initial_price > 0 else quantity * selling_price
             current_stock_value = quantity * selling_price
             
             conn = get_db()
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO stock_items (name, quantity, selling_price, description, 
-                                       total_initial_value, current_stock_value)
-                VALUES (?, ?, ?, ?, ?, ?)
+                                       total_initial_value, current_stock_value, initial_price, added_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (name, quantity, selling_price, description, 
-                  total_initial_value, current_stock_value))
+                  total_initial_value, current_stock_value, initial_price, session['user_id']))
             conn.commit()
             conn.close()
             
@@ -336,7 +352,7 @@ def add_item():
             flash(f'Error adding item: {str(e)}', 'error')
             return redirect(url_for('add_item'))
     
-    return render_template('add_item.html')
+    return render_template('add_item.html', is_admin=session.get('username') == 'admin')
 
 @app.route('/sales')
 def sales():
