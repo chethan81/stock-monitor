@@ -174,7 +174,7 @@ def auth_login():
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
-            session['user_email'] = user.get('email', '')
+            session['user_email'] = user['email'] if user['email'] else ''
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -272,7 +272,7 @@ def dashboard():
         conn.close()
         
         return render_template('dashboard.html', 
-                             username=session.get('username', 'User'),
+                             username=session['username'] if 'username' in session else 'User',
                              total_items=total_items,
                              current_stock_value=current_stock_value,
                              expected_revenue=expected_revenue,
@@ -280,7 +280,7 @@ def dashboard():
     except Exception as e:
         flash(f'Dashboard error: {str(e)}', 'error')
         return render_template('dashboard.html', 
-                             username=session.get('username', 'User'),
+                             username=session['username'] if 'username' in session else 'User',
                              total_items=0, current_stock_value=0, 
                              expected_revenue=0, recent_items=[])
 
@@ -398,7 +398,7 @@ def sell_item(id):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (id, item['name'], quantity_sold, item['selling_price'], total_amount, 
                   item['image_path'], session['user_id'], session['username'], 
-                  session.get('user_email', ''), place))
+                  session['user_email'] if 'user_email' in session else '', place))
             
             conn.commit()
             flash(f'Sold {quantity_sold} {item["name"]} successfully!', 'success')
