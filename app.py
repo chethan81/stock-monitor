@@ -122,9 +122,11 @@ init_database()
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    return "Stock Monitor App is Running! <a href='/login'>Go to Login</a>"
+
+@app.route('/test')
+def test():
+    return "Test route working! <a href='/login'>Go to Login</a>"
 
 @app.route('/debug/users')
 def debug_users():
