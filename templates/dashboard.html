@@ -15,12 +15,12 @@
     </div>
     
     <div class="stat-card">
-        <div class="stat-value">${{ "%.2f"|format(current_stock_value) }}</div>
+        <div class="stat-value">₹{{ "%.2f"|format(current_stock_value) }}</div>
         <div class="stat-label">Current Stock Value</div>
     </div>
     
     <div class="stat-card">
-        <div class="stat-value">${{ "%.2f"|format(expected_revenue) }}</div>
+        <div class="stat-value">₹{{ "%.2f"|format(expected_revenue) }}</div>
         <div class="stat-label">Expected Revenue</div>
     </div>
 </div>
@@ -61,7 +61,7 @@
                     </td>
                     <td><strong>{{ item.name }}</strong></td>
                     <td>{{ item.quantity }}</td>
-                    <td>${{ "%.2f"|format(item.selling_price) }}</td>
+                    <td>₹{{ "%.2f"|format(item.selling_price) }}</td>
                     <td>{{ item.created_at[:10] }}</td>
                 </tr>
                 {% endfor %}

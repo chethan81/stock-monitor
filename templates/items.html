@@ -19,6 +19,7 @@
                     <th>Selling Price</th>
                     <th>Total Value</th>
                     <th>Description</th>
+                    <th>Added By</th>
                     <th>Added Date</th>
                     <th>Actions</th>
                 </tr>
@@ -40,9 +41,16 @@
                             <span style="color: #e74c3c; font-size: 12px;">(Out of Stock)</span>
                         {% endif %}
                     </td>
-                    <td>${{ "%.2f"|format(item.selling_price) }}</td>
-                    <td>${{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                    <td>₹{{ "%.2f"|format(item.selling_price) }}</td>
+                    <td>₹{{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                     <td>{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</td>
+                    <td>
+                        {% if item.added_by_username %}
+                            <span style="color: #3498db;">{{ item.added_by_username }}</span>
+                        {% else %}
+                            <span style="color: #999;">Unknown</span>
+                        {% endif %}
+                    </td>
                     <td>{{ item.created_at[:10] }}</td>
                     <td>
                         <div class="actions">
