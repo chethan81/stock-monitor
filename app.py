@@ -107,14 +107,14 @@ def init_database():
                           ('admin', hashed_password, 'admin@stockmonitor.com'))
             
             # Verify admin user was created
-            cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+            cursor.execute('SELECT username FROM users WHERE username = ?', ('admin',))
             admin_check = cursor.fetchone()
             if admin_check:
-                print(f"Admin user created successfully: {admin_check['username']}")
+                print(f"Admin user created successfully: {admin_check[0]}")
             else:
                 print("ERROR: Failed to create admin user")
         else:
-            print(f"Admin user already exists: {admin_user['username']}")
+            print(f"Admin user already exists: {admin_user[1]}")  # username is at index 1
         
         conn.commit()
         conn.close()
