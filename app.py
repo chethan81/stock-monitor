@@ -88,13 +88,25 @@ def init_database():
         )
     ''')
     
-    # Create admin user if not exists
+    # Check if admin user exists, if not create it
     cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-    if not cursor.fetchone():
+    admin_user = cursor.fetchone()
+    
+    if not admin_user:
+        print("Creating admin user...")
         hashed_password = generate_password_hash('admin123')
         cursor.execute('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)', 
                       ('admin', hashed_password, 'admin@stockmonitor.com'))
-        print("Admin user created")
+        
+        # Verify admin user was created
+        cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+        admin_check = cursor.fetchone()
+        if admin_check:
+            print(f"Admin user created successfully: {admin_check['username']}")
+        else:
+            print("ERROR: Failed to create admin user")
+    else:
+        print(f"Admin user already exists: {admin_user['username']}")
     
     conn.commit()
     conn.close()
@@ -113,6 +125,25 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
+@app.route('/debug/users')
+def debug_users():
+    """Debug route to check existing users"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, username, email, created_at FROM users')
+        users = cursor.fetchall()
+        conn.close()
+        
+        user_list = "<h2>Existing Users:</h2><ul>"
+        for user in users:
+            user_list += f"<li>ID: {user['id']}, Username: {user['username']}, Email: {user['email']}</li>"
+        user_list += "</ul>"
+        
+        return user_list
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 @app.route('/login')
 def login():
