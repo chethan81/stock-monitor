@@ -126,9 +126,17 @@ def init_database():
 
 def get_db():
     """Get database connection"""
-    conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)  # Add timeout
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {str(e)}")
+        # If database doesn't exist, initialize it
+        init_database()
+        conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 # Initialize database on startup
 init_database()
@@ -140,25 +148,6 @@ def index():
 @app.route('/test')
 def test():
     return "Test route working! <a href='/login'>Go to Login</a>"
-
-@app.route('/debug/users')
-def debug_users():
-    """Debug route to check existing users"""
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, username, email, created_at FROM users')
-        users = cursor.fetchall()
-        conn.close()
-        
-        user_list = "<h2>Existing Users:</h2><ul>"
-        for user in users:
-            user_list += f"<li>ID: {user['id']}, Username: {user['username']}, Email: {user['email']}</li>"
-        user_list += "</ul>"
-        
-        return user_list
-    except Exception as e:
-        return f"Error: {str(e)}"
 
 @app.route('/login')
 def login():
