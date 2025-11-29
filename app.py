@@ -17,7 +17,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # For Render, we need to use PostgreSQL instead of SQLite
 # But for now, we'll keep SQLite for simplicity
-DATABASE_PATH = os.environ.get('DATABASE_PATH', 'database.db')
+DATABASE_PATH = os.environ.get('DATABASE_PATH', os.path.join(os.getcwd(), 'database.db'))
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -25,12 +25,18 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db():
+    # For Render, use absolute path
+    if os.environ.get('RENDER'):
+        db_path = '/opt/render/project/src/database.db'
+    else:
+        db_path = DATABASE_PATH
+    
     # Ensure database directory exists
-    db_dir = os.path.dirname(DATABASE_PATH)
+    db_dir = os.path.dirname(db_path)
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
     
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
