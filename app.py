@@ -113,7 +113,7 @@ def init_database():
 
 def get_db():
     """Get database connection"""
-    conn = sqlite3.connect(DATABASE_FILE)
+    conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)  # Add timeout
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -201,33 +201,34 @@ def auth_register():
             flash('Password must be at least 6 characters long', 'error')
             return redirect(url_for('register'))
         
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # Check if username already exists
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        if cursor.fetchone():
-            flash('Username already exists', 'error')
-            conn.close()
-            return redirect(url_for('register'))
-        
-        # Check if email already exists
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-        if cursor.fetchone():
-            flash('Email already registered', 'error')
-            conn.close()
-            return redirect(url_for('register'))
-        
-        # Create new user
-        hashed_password = generate_password_hash(password)
-        cursor.execute('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', 
-                      (username, email, hashed_password))
-        
-        conn.commit()
-        conn.close()
-        
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))
+        conn = None
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # Check if username already exists
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            if cursor.fetchone():
+                flash('Username already exists', 'error')
+                return redirect(url_for('register'))
+            
+            # Check if email already exists
+            cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+            if cursor.fetchone():
+                flash('Email already registered', 'error')
+                return redirect(url_for('register'))
+            
+            # Create new user
+            hashed_password = generate_password_hash(password)
+            cursor.execute('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', 
+                          (username, email, hashed_password))
+            
+            conn.commit()
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        finally:
+            if conn:
+                conn.close()
     except Exception as e:
         flash(f'Registration error: {str(e)}', 'error')
         return redirect(url_for('register'))
@@ -463,7 +464,7 @@ def investment():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if session.get('username') != 'admin':
+    if session['username'] != 'admin':
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -503,7 +504,7 @@ def add_investment():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if session.get('username') != 'admin':
+    if session['username'] != 'admin':
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -538,7 +539,7 @@ def investors():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if session.get('username') != 'admin':
+    if session['username'] != 'admin':
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -582,7 +583,7 @@ def investor_ledger(name):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if session.get('username') != 'admin':
+    if session['username'] != 'admin':
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('dashboard'))
     
