@@ -15,101 +15,114 @@ DATABASE_FILE = '/tmp/stock_monitor.db'
 
 def init_database():
     """Initialize database with tables and admin user"""
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
+    print(f"Initializing database at: {DATABASE_FILE}")
     
-    # Create users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            email TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create stock items table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS stock_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            quantity INTEGER NOT NULL,
-            selling_price REAL NOT NULL,
-            description TEXT,
-            image_path TEXT,
-            total_initial_value REAL,
-            current_stock_value REAL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create sales table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS sales (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_id INTEGER,
-            item_name TEXT,
-            quantity_sold INTEGER,
-            selling_price REAL,
-            total_amount REAL,
-            image_path TEXT,
-            user_id INTEGER,
-            user_name TEXT,
-            user_email TEXT,
-            place TEXT,
-            sold_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create investment transactions table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS investment_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transaction_type TEXT,
-            amount REAL,
-            description TEXT,
-            investor_name TEXT,
-            investor_email TEXT,
-            investor_phone TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create wages table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS wages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_name TEXT,
-            amount REAL,
-            wage_type TEXT,
-            description TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Check if admin user exists, if not create it
-    cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-    admin_user = cursor.fetchone()
-    
-    if not admin_user:
-        print("Creating admin user...")
-        hashed_password = generate_password_hash('admin123')
-        cursor.execute('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)', 
-                      ('admin', hashed_password, 'admin@stockmonitor.com'))
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
         
-        # Verify admin user was created
+        # Create users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                email TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Users table created")
+        
+        # Create stock items table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS stock_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                selling_price REAL NOT NULL,
+                description TEXT,
+                image_path TEXT,
+                total_initial_value REAL,
+                current_stock_value REAL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Stock items table created")
+        
+        # Create sales table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id INTEGER,
+                item_name TEXT,
+                quantity_sold INTEGER,
+                selling_price REAL,
+                total_amount REAL,
+                image_path TEXT,
+                user_id INTEGER,
+                user_name TEXT,
+                user_email TEXT,
+                place TEXT,
+                sold_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Sales table created")
+        
+        # Create investment transactions table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS investment_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transaction_type TEXT,
+                amount REAL,
+                description TEXT,
+                investor_name TEXT,
+                investor_email TEXT,
+                investor_phone TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Investment transactions table created")
+        
+        # Create wages table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS wages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_name TEXT,
+                amount REAL,
+                wage_type TEXT,
+                description TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Wages table created")
+        
+        # Check if admin user exists, if not create it
         cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-        admin_check = cursor.fetchone()
-        if admin_check:
-            print(f"Admin user created successfully: {admin_check['username']}")
+        admin_user = cursor.fetchone()
+        
+        if not admin_user:
+            print("Creating admin user...")
+            hashed_password = generate_password_hash('admin123')
+            cursor.execute('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)', 
+                          ('admin', hashed_password, 'admin@stockmonitor.com'))
+            
+            # Verify admin user was created
+            cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+            admin_check = cursor.fetchone()
+            if admin_check:
+                print(f"Admin user created successfully: {admin_check['username']}")
+            else:
+                print("ERROR: Failed to create admin user")
         else:
-            print("ERROR: Failed to create admin user")
-    else:
-        print(f"Admin user already exists: {admin_user['username']}")
-    
-    conn.commit()
-    conn.close()
+            print(f"Admin user already exists: {admin_user['username']}")
+        
+        conn.commit()
+        conn.close()
+        print("Database initialization completed successfully")
+        
+    except Exception as e:
+        print(f"Database initialization error: {str(e)}")
+        raise e
 
 def get_db():
     """Get database connection"""
