@@ -11,14 +11,14 @@ print("Flask app created successfully")
 app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan81-production-key-1234567890')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Initialize database on startup
-try:
-    print("Starting database initialization...")
-    init_database()
-    print("Database initialized successfully")
-except Exception as e:
-    print(f"Database initialization failed: {e}")
-    # Continue without database for debugging
+# Initialize database on startup (skip for now to get app running)
+# try:
+#     print("Starting database initialization...")
+#     init_database()
+#     print("Database initialized successfully")
+# except Exception as e:
+#     print(f"Database initialization failed: {e}")
+#     # Continue without database for debugging
 
 def format_currency(amount):
     """Format amount with rupee symbol"""
