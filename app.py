@@ -8,19 +8,36 @@ app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan
 
 @app.route('/')
 def index():
-    return "Stock Monitor App is Running! <a href='/login'>Go to Login</a>"
+    return '''
+    <h1>Stock Monitor App is Running!</h1>
+    <p><a href="/login">Go to Login</a></p>
+    <p><a href="/test">Test Route</a></p>
+    <p><a href="/dashboard">Dashboard</a></p>
+    '''
 
 @app.route('/test')
 def test():
-    return "Test route working! <a href='/login'>Go to Login</a>"
+    return '''
+    <h1>Test route working!</h1>
+    <p><a href="/login">Go to Login</a></p>
+    <p><a href="/">Back to Home</a></p>
+    '''
 
 @app.route('/login')
 def login():
-    return "Login page - basic version working! <a href='/'>Back to Home</a>"
+    return '''
+    <h1>Login page - basic version working!</h1>
+    <p><a href="/">Back to Home</a></p>
+    <p><a href="/dashboard">Dashboard</a></p>
+    '''
 
 @app.route('/dashboard')
 def dashboard():
-    return "Dashboard - basic version working! <a href='/login'>Back to Login</a>"
+    return '''
+    <h1>Dashboard - basic version working!</h1>
+    <p><a href="/login">Back to Login</a></p>
+    <p><a href="/">Back to Home</a></p>
+    '''
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))  # Render default is 10000
