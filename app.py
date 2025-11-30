@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from database import execute_query, init_database, test_connection
-# MySQL deployment fix - v2
+# MySQL deployment fix - v3 - env vars updated
 
 app = Flask(__name__)
 # Configuration
