@@ -6,16 +6,19 @@ from database import execute_query, init_database, test_connection
 # MySQL deployment fix - v3 - env vars updated
 
 app = Flask(__name__)
+print("Flask app created successfully")
 # Configuration
 app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan81-production-key-1234567890')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # Initialize database on startup
 try:
+    print("Starting database initialization...")
     init_database()
     print("Database initialized successfully")
 except Exception as e:
     print(f"Database initialization failed: {e}")
+    # Continue without database for debugging
 
 def format_currency(amount):
     """Format amount with rupee symbol"""
