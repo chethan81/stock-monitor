@@ -21,33 +21,52 @@ DB_CONFIG = {
     'pool_name': 'stock_monitor_pool'
 }
 
-# Create connection pool
-try:
-    connection_pool = mysql.connector.pooling.MySQLConnectionPool(**DB_CONFIG)
-    print("MySQL connection pool created successfully")
-except Error as e:
-    print(f"Error creating connection pool: {e}")
-    connection_pool = None
+# Create connection pool with retry logic
+connection_pool = None
+max_retries = 3
+retry_delay = 2
+
+for attempt in range(max_retries):
+    try:
+        connection_pool = mysql.connector.pooling.MySQLConnectionPool(**DB_CONFIG)
+        print("MySQL connection pool created successfully")
+        break
+    except Error as e:
+        print(f"Attempt {attempt + 1}/{max_retries}: Error creating connection pool: {e}")
+        if attempt < max_retries - 1:
+            print(f"Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+        else:
+            print("Failed to create connection pool after all attempts")
+            connection_pool = None
 
 def get_db_connection():
-    """Get database connection from pool with retry logic"""
-    if not connection_pool:
-        raise Exception("Database connection pool not available")
+    """Get database connection from pool with retry logic and fallback"""
+    global connection_pool
     
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            conn = connection_pool.get_connection()
-            if conn.is_connected():
+    # Try connection pool first
+    if connection_pool:
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                conn = connection_pool.get_connection()
                 return conn
-        except Error as e:
-            print(f"Connection attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(1)  # Wait before retry
-            else:
-                raise e
+            except Error as e:
+                print(f"Pool connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                else:
+                    print("All pool connection attempts failed, trying direct connection")
     
-    raise Exception("Failed to get database connection after multiple attempts")
+    # Fallback to direct connection
+    try:
+        print("Attempting direct database connection...")
+        conn = mysql.connector.connect(**DB_CONFIG)
+        print("Direct connection successful")
+        return conn
+    except Error as e:
+        print(f"Direct connection failed: {e}")
+        raise Exception("Unable to establish database connection")
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=False):
     """Execute database query with proper error handling"""
