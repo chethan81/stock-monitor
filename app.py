@@ -10,6 +10,7 @@ print("Flask app created successfully")
 app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan81-production-key-1234567890')
 
 # Initialize database on startup (with better error handling)
+# Railway MySQL integration - v2 - port fix
 try:
     print("Starting database initialization...")
     init_database()
@@ -90,5 +91,5 @@ def dashboard():
     '''
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Render default is 10000
+    port = int(os.environ.get('PORT', 10000))  # Render expects port 10000
     app.run(host='0.0.0.0', port=port)
