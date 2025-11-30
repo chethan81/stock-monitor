@@ -30,6 +30,15 @@ def get_db():
     # All actual database operations should use execute_query from database.py
     return None
 
+@app.route('/test-db')
+def test_db():
+    """Test database connection endpoint"""
+    try:
+        result = test_connection()
+        return {"status": "success", "connection": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.route('/')
 def index():
     return "Stock Monitor App is Running! <a href='/login'>Go to Login</a>"
