@@ -1,27 +1,75 @@
 import os
-from flask import Flask
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+from database import execute_query, init_database, test_connection
 
 app = Flask(__name__)
 print("Flask app created successfully")
 # Configuration
 app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan81-production-key-1234567890')
 
+# Initialize database on startup (with better error handling)
+try:
+    print("Starting database initialization...")
+    init_database()
+    print("Database initialized successfully")
+except Exception as e:
+    print(f"Database initialization failed: {e}")
+    print("App will continue without database - basic routes will work")
+
 @app.route('/')
 def index():
-    return '''
-    <h1>Stock Monitor App is Running!</h1>
-    <p><a href="/login">Go to Login</a></p>
-    <p><a href="/test">Test Route</a></p>
-    <p><a href="/dashboard">Dashboard</a></p>
-    '''
+    try:
+        # Try to get dashboard stats if database works
+        if test_connection():
+            return '''
+            <h1>🎉 Stock Monitor - Database Connected!</h1>
+            <p><a href="/login">Login to Dashboard</a></p>
+            <p><a href="/test">Database Test</a></p>
+            <p><strong>Status:</strong> ✅ Database Connected</p>
+            '''
+        else:
+            return '''
+            <h1>Stock Monitor App is Running!</h1>
+            <p><a href="/login">Go to Login</a></p>
+            <p><a href="/test">Test Route</a></p>
+            <p><a href="/dashboard">Dashboard</a></p>
+            <p><strong>Status:</strong> ⚠️ Database Connection Issue</p>
+            '''
+    except Exception as e:
+        return f'''
+        <h1>Stock Monitor App is Running!</h1>
+        <p><a href="/login">Go to Login</a></p>
+        <p><a href="/test">Test Route</a></p>
+        <p><a href="/dashboard">Dashboard</a></p>
+        <p><strong>Status:</strong> ❌ Database Error: {str(e)}</p>
+        '''
 
 @app.route('/test')
 def test():
-    return "TEST ROUTE WORKING! If you see this, your app is working perfectly!"
-
-@app.route('/simple')
-def simple():
-    return "<h1>SIMPLE TEST</h1><p>Your app is working!</p>"
+    try:
+        if test_connection():
+            return '''
+            <h1>✅ Database Connection Successful!</h1>
+            <p>Railway MySQL is working perfectly!</p>
+            <p><a href="/login">Go to Login</a></p>
+            <p><a href="/">Back to Home</a></p>
+            '''
+        else:
+            return '''
+            <h1>❌ Database Connection Failed</h1>
+            <p>Having trouble connecting to Railway MySQL</p>
+            <p><a href="/login">Go to Login</a></p>
+            <p><a href="/">Back to Home</a></p>
+            '''
+    except Exception as e:
+        return f'''
+        <h1>❌ Database Error</h1>
+        <p>Error: {str(e)}</p>
+        <p><a href="/login">Go to Login</a></p>
+        <p><a href="/">Back to Home</a></p>
+        '''
 
 @app.route('/login')
 def login():
