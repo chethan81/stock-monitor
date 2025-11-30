@@ -17,11 +17,11 @@ def index():
 
 @app.route('/test')
 def test():
-    return '''
-    <h1>Test route working!</h1>
-    <p><a href="/login">Go to Login</a></p>
-    <p><a href="/">Back to Home</a></p>
-    '''
+    return "TEST ROUTE WORKING! If you see this, your app is working perfectly!"
+
+@app.route('/simple')
+def simple():
+    return "<h1>SIMPLE TEST</h1><p>Your app is working!</p>"
 
 @app.route('/login')
 def login():
