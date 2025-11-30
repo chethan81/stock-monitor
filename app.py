@@ -1,151 +1,30 @@
 import os
-import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from database import execute_query, init_database, test_connection
 
 app = Flask(__name__)
-
 # Configuration
 app.secret_key = os.environ.get('SECRET_KEY', 'stock-monitor-secret-2024-chethan81-production-key-1234567890')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Global database connection for persistence
-DATABASE_FILE = os.path.join(os.getcwd(), 'stock_monitor.db')  # Use current directory
-
-def init_database():
-    """Initialize database with tables and admin user"""
-    print(f"Initializing database at: {DATABASE_FILE}")
-    
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        
-        # Create users table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                email TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Users table created")
-        
-        # Create stock items table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS stock_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                quantity INTEGER NOT NULL,
-                selling_price REAL NOT NULL,
-                description TEXT,
-                image_path TEXT,
-                total_initial_value REAL,
-                current_stock_value REAL,
-                initial_price REAL,
-                added_by INTEGER,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Stock items table created")
-        
-        # Create sales table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS sales (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_id INTEGER,
-                item_name TEXT,
-                quantity_sold INTEGER,
-                selling_price REAL,
-                total_amount REAL,
-                image_path TEXT,
-                user_id INTEGER,
-                user_name TEXT,
-                user_email TEXT,
-                place TEXT,
-                sold_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Sales table created")
-        
-        # Create investment transactions table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS investment_transactions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                transaction_type TEXT,
-                amount REAL,
-                description TEXT,
-                investor_name TEXT,
-                investor_email TEXT,
-                investor_phone TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Investment transactions table created")
-        
-        # Create wages table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS wages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                employee_name TEXT,
-                amount REAL,
-                wage_type TEXT,
-                description TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Wages table created")
-        
-        # Check if admin user exists, if not create it
-        cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-        admin_user = cursor.fetchone()
-        
-        if not admin_user:
-            print("Creating admin user...")
-            hashed_password = generate_password_hash('admin123')
-            cursor.execute('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)', 
-                          ('admin', hashed_password, 'admin@stockmonitor.com'))
-            
-            # Verify admin user was created
-            cursor.execute('SELECT username FROM users WHERE username = ?', ('admin',))
-            admin_check = cursor.fetchone()
-            if admin_check:
-                print(f"Admin user created successfully: {admin_check[0]}")
-            else:
-                print("ERROR: Failed to create admin user")
-        else:
-            print(f"Admin user already exists: {admin_user[1]}")  # username is at index 1
-        
-        conn.commit()
-        conn.close()
-        print("Database initialization completed successfully")
-        
-    except Exception as e:
-        print(f"Database initialization error: {str(e)}")
-        raise e
+# Initialize database on startup
+try:
+    init_database()
+    print("Database initialized successfully")
+except Exception as e:
+    print(f"Database initialization failed: {e}")
 
 def format_currency(amount):
     """Format amount with rupee symbol"""
     return f"₹{amount:,.2f}"
 
 def get_db():
-    """Get database connection"""
-    try:
-        conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-    except Exception as e:
-        print(f"Database connection error: {str(e)}")
-        # If database doesn't exist, initialize it
-        init_database()
-        conn = sqlite3.connect(DATABASE_FILE, timeout=10.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-# Initialize database on startup
-init_database()
+    """Get database connection (legacy function for compatibility)"""
+    # This function is kept for backward compatibility
+    # All actual database operations should use execute_query from database.py
+    return None
 
 @app.route('/')
 def index():
@@ -173,11 +52,11 @@ def auth_login():
         username = request.form['username']
         password = request.form['password']
         
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        user = cursor.fetchone()
-        conn.close()
+        user = execute_query(
+            'SELECT * FROM users WHERE username = %s', 
+            (username,), 
+            fetch_one=True
+        )
         
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
@@ -209,34 +88,39 @@ def auth_register():
             flash('Password must be at least 6 characters long', 'error')
             return redirect(url_for('register'))
         
-        conn = None
         try:
-            conn = get_db()
-            cursor = conn.cursor()
-            
             # Check if username already exists
-            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-            if cursor.fetchone():
+            existing_user = execute_query(
+                'SELECT * FROM users WHERE username = %s', 
+                (username,), 
+                fetch_one=True
+            )
+            if existing_user:
                 flash('Username already exists', 'error')
                 return redirect(url_for('register'))
             
             # Check if email already exists
-            cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-            if cursor.fetchone():
+            existing_email = execute_query(
+                'SELECT * FROM users WHERE email = %s', 
+                (email,), 
+                fetch_one=True
+            )
+            if existing_email:
                 flash('Email already registered', 'error')
                 return redirect(url_for('register'))
             
             # Create new user
             hashed_password = generate_password_hash(password)
-            cursor.execute('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', 
-                          (username, email, hashed_password))
+            execute_query(
+                'INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)', 
+                (username, email, hashed_password)
+            )
             
-            conn.commit()
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
-        finally:
-            if conn:
-                conn.close()
+        except Exception as db_error:
+            flash(f'Database error: {str(db_error)}', 'error')
+            return redirect(url_for('register'))
     except Exception as e:
         flash(f'Registration error: {str(e)}', 'error')
         return redirect(url_for('register'))
@@ -259,33 +143,27 @@ def dashboard():
         return redirect(url_for('login'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
         # Get total items
-        cursor.execute('SELECT COUNT(*) as count FROM stock_items')
-        total_items = cursor.fetchone()['count']
+        total_items_result = execute_query('SELECT COUNT(*) as count FROM stock_items', fetch_one=True)
+        total_items = total_items_result['count'] if total_items_result else 0
         
         # Get current stock value
-        cursor.execute('SELECT SUM(current_stock_value) as total FROM stock_items')
-        current_stock_value = cursor.fetchone()['total'] or 0
+        stock_value_result = execute_query('SELECT SUM(current_stock_value) as total FROM stock_items', fetch_one=True)
+        current_stock_value = stock_value_result['total'] or 0
         
         # Get expected revenue
-        cursor.execute('SELECT SUM(selling_price * quantity) as total FROM stock_items')
-        expected_revenue = cursor.fetchone()['total'] or 0
+        revenue_result = execute_query('SELECT SUM(selling_price * quantity) as total FROM stock_items', fetch_one=True)
+        expected_revenue = revenue_result['total'] or 0
         
         # Get recent items
-        cursor.execute('SELECT * FROM stock_items ORDER BY created_at DESC LIMIT 5')
-        recent_items = cursor.fetchall()
-        
-        conn.close()
+        recent_items = execute_query('SELECT * FROM stock_items ORDER BY created_at DESC LIMIT 5', fetch_all=True)
         
         return render_template('dashboard.html', 
                              username=session['username'] if 'username' in session else 'User',
                              total_items=total_items,
                              current_stock_value=current_stock_value,
                              expected_revenue=expected_revenue,
-                             recent_items=recent_items)
+                             recent_items=recent_items or [])
     except Exception as e:
         flash(f'Dashboard error: {str(e)}', 'error')
         return render_template('dashboard.html', 
@@ -299,17 +177,13 @@ def items():
         return redirect(url_for('login'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('''
+        items_list = execute_query('''
             SELECT si.*, u.username as added_by_username 
             FROM stock_items si 
             LEFT JOIN users u ON si.added_by = u.id 
             ORDER BY si.created_at DESC
-        ''')
-        items_list = cursor.fetchall()
-        conn.close()
-        return render_template('items.html', items=items_list)
+        ''', fetch_all=True)
+        return render_template('items.html', items=items_list or [])
     except Exception as e:
         flash(f'Items error: {str(e)}', 'error')
         return render_template('items.html', items=[])
@@ -335,16 +209,12 @@ def add_item():
             total_initial_value = quantity * initial_price if initial_price > 0 else quantity * selling_price
             current_stock_value = quantity * selling_price
             
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
+            execute_query('''
                 INSERT INTO stock_items (name, quantity, selling_price, description, 
                                        total_initial_value, current_stock_value, initial_price, added_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ''', (name, quantity, selling_price, description, 
                   total_initial_value, current_stock_value, initial_price, session['user_id']))
-            conn.commit()
-            conn.close()
             
             flash('Item added successfully!', 'success')
             return redirect(url_for('items'))
@@ -354,25 +224,71 @@ def add_item():
     
     return render_template('add_item.html', is_admin=session.get('username') == 'admin')
 
+@app.route('/edit_item/<int:id>', methods=['GET', 'POST'])
+def edit_item(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Get item details
+    item = execute_query('SELECT * FROM stock_items WHERE id = %s', (id,), fetch_one=True)
+    
+    if not item:
+        flash('Item not found', 'error')
+        return redirect(url_for('items'))
+    
+    if request.method == 'POST':
+        try:
+            name = request.form['name']
+            quantity = int(request.form['quantity'])
+            selling_price = float(request.form['selling_price'])
+            description = request.form.get('description', '')
+            
+            # Calculate initial price (admin only)
+            initial_price = item.get('initial_price', 0.0)
+            if session.get('username') == 'admin':
+                initial_price = float(request.form.get('initial_price', initial_price))
+            
+            # Calculate values
+            total_initial_value = quantity * initial_price if initial_price > 0 else quantity * selling_price
+            current_stock_value = quantity * selling_price
+            
+            execute_query('UPDATE stock_items SET name = %s, quantity = %s, selling_price = %s, description = %s, total_initial_value = %s, current_stock_value = %s, initial_price = %s WHERE id = %s', 
+                          (name, quantity, selling_price, description, total_initial_value, current_stock_value, initial_price, id))
+            
+            flash('Item updated successfully!', 'success')
+            return redirect(url_for('items'))
+        except Exception as e:
+            flash(f'Error updating item: {str(e)}', 'error')
+            return redirect(url_for('edit_item', id=id))
+    
+    return render_template('edit_item.html', item=item, is_admin=session.get('username') == 'admin')
+
+@app.route('/delete_item/<int:id>', methods=['POST'])
+def delete_item(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        execute_query('DELETE FROM stock_items WHERE id = %s', (id,))
+        flash('Item deleted successfully!', 'success')
+    except Exception as e:
+        flash(f'Error deleting item: {str(e)}', 'error')
+    
+    return redirect(url_for('items'))
+
 @app.route('/sales')
 def sales():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
         # Get all sales
-        cursor.execute('SELECT * FROM sales ORDER BY sold_at DESC')
-        sales_list = cursor.fetchall()
+        sales_list = execute_query('SELECT * FROM sales ORDER BY sold_at DESC', fetch_all=True)
         
         # Get available items for sale
-        cursor.execute('SELECT * FROM stock_items WHERE quantity > 0 ORDER BY name')
-        available_items = cursor.fetchall()
+        available_items = execute_query('SELECT * FROM stock_items WHERE quantity > 0 ORDER BY name', fetch_all=True)
         
-        conn.close()
-        return render_template('sales.html', sales=sales_list, available_items=available_items)
+        return render_template('sales.html', sales=sales_list or [], available_items=available_items or [])
     except Exception as e:
         flash(f'Sales error: {str(e)}', 'error')
         return render_template('sales.html', sales=[], available_items=[])
@@ -382,16 +298,11 @@ def sell_item(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    conn = get_db()
-    cursor = conn.cursor()
-    
     # Get item details
-    cursor.execute('SELECT * FROM stock_items WHERE id = ?', (id,))
-    item = cursor.fetchone()
+    item = execute_query('SELECT * FROM stock_items WHERE id = %s', (id,), fetch_one=True)
     
     if not item:
         flash('Item not found', 'error')
-        conn.close()
         return redirect(url_for('sales'))
     
     if request.method == 'POST':
@@ -401,31 +312,28 @@ def sell_item(id):
             
             if quantity_sold > item['quantity']:
                 flash('Not enough stock available', 'error')
-                conn.close()
                 return redirect(url_for('sell_item', id=id))
             
             # Update item quantity
             new_quantity = item['quantity'] - quantity_sold
-            cursor.execute('UPDATE stock_items SET quantity = ?, current_stock_value = ? WHERE id = ?', 
+            execute_query('UPDATE stock_items SET quantity = %s, current_stock_value = %s WHERE id = %s', 
                           (new_quantity, new_quantity * item['selling_price'], id))
             
             # Add to sales
             total_amount = quantity_sold * item['selling_price']
-            cursor.execute('''
+            execute_query('''
                 INSERT INTO sales (item_id, item_name, quantity_sold, selling_price, total_amount, 
                                  image_path, user_id, user_name, user_email, place)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id, item['name'], quantity_sold, item['selling_price'], total_amount, 
                   item['image_path'], session['user_id'], session['username'], 
                   session['user_email'] if 'user_email' in session else '', place))
             
-            conn.commit()
             flash(f'Sold {quantity_sold} {item["name"]} successfully!', 'success')
             return redirect(url_for('sales'))
         except Exception as e:
             flash(f'Error selling item: {str(e)}', 'error')
     
-    conn.close()
     return render_template('sell_item.html', item=item)
 
 @app.route('/wages')
@@ -434,19 +342,14 @@ def wages():
         return redirect(url_for('login'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
         # Get total wages paid
-        cursor.execute('SELECT SUM(amount) as total FROM wages')
-        total_wages = cursor.fetchone()['total'] or 0
+        total_wages_result = execute_query('SELECT SUM(amount) as total FROM wages', fetch_one=True)
+        total_wages = total_wages_result['total'] or 0
         
         # Get all wages
-        cursor.execute('SELECT * FROM wages ORDER BY created_at DESC')
-        wages_list = cursor.fetchall()
+        wages_list = execute_query('SELECT * FROM wages ORDER BY created_at DESC', fetch_all=True)
         
-        conn.close()
-        return render_template('wages.html', wages=wages_list, total_wages=total_wages)
+        return render_template('wages.html', wages=wages_list or [], total_wages=total_wages)
     except Exception as e:
         flash(f'Wages error: {str(e)}', 'error')
         return render_template('wages.html', wages=[], total_wages=0)
@@ -463,12 +366,8 @@ def add_wage():
             wage_type = request.form['wage_type']
             description = request.form.get('description', '')
             
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('INSERT INTO wages (employee_name, amount, wage_type, description) VALUES (?, ?, ?, ?)', 
+            execute_query('INSERT INTO wages (employee_name, amount, wage_type, description) VALUES (%s, %s, %s, %s)', 
                           (employee_name, amount, wage_type, description))
-            conn.commit()
-            conn.close()
             
             flash('Wage added successfully!', 'success')
             return redirect(url_for('wages'))
@@ -487,32 +386,25 @@ def investment():
         return redirect(url_for('dashboard'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
         # Get total investment
-        cursor.execute('SELECT SUM(CASE WHEN transaction_type = "invest" THEN amount ELSE -amount END) as total FROM investment_transactions')
-        total_invested = cursor.fetchone()['total'] or 0
+        total_invested_result = execute_query('SELECT SUM(CASE WHEN transaction_type = "invest" THEN amount ELSE -amount END) as total FROM investment_transactions', fetch_one=True)
+        total_invested = total_invested_result['total'] or 0
         
         # Get stock value
-        cursor.execute('SELECT SUM(current_stock_value) as total FROM stock_items')
-        stock_value = cursor.fetchone()['total'] or 0
+        stock_value_result = execute_query('SELECT SUM(current_stock_value) as total FROM stock_items', fetch_one=True)
+        stock_value = stock_value_result['total'] or 0
         
         # Get all transactions
-        cursor.execute('SELECT * FROM investment_transactions ORDER BY created_at DESC')
-        transactions = cursor.fetchall()
+        transactions = execute_query('SELECT * FROM investment_transactions ORDER BY created_at DESC', fetch_all=True)
         
         # Get items list
-        cursor.execute('SELECT * FROM stock_items ORDER BY name')
-        items_list = cursor.fetchall()
-        
-        conn.close()
+        items_list = execute_query('SELECT * FROM stock_items ORDER BY name', fetch_all=True)
         
         return render_template('investment.html', 
                              total_invested=total_invested,
                              stock_value=stock_value,
-                             transactions=transactions,
-                             items=items_list)
+                             transactions=transactions or [],
+                             items=items_list or [])
     except Exception as e:
         flash(f'Investment error: {str(e)}', 'error')
         return redirect(url_for('dashboard'))
@@ -535,15 +427,11 @@ def add_investment():
             investor_email = request.form['investor_email']
             investor_phone = request.form['investor_phone']
             
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
+            execute_query('''
                 INSERT INTO investment_transactions (transaction_type, amount, description, 
                                                  investor_name, investor_email, investor_phone)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
             ''', (transaction_type, amount, description, investor_name, investor_email, investor_phone))
-            conn.commit()
-            conn.close()
             
             flash(f'{transaction_type.title()} of ${amount:.2f} from {investor_name} recorded successfully!', 'success')
             return redirect(url_for('investment'))
@@ -562,16 +450,11 @@ def investors():
         return redirect(url_for('dashboard'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT investor_name, investor_email, investor_phone, transaction_type, amount FROM investment_transactions')
-        transactions = cursor.fetchall()
-        conn.close()
+        transactions = execute_query('SELECT investor_name, investor_email, investor_phone, transaction_type, amount FROM investment_transactions', fetch_all=True)
         
         investor_data = {}
-        for t in transactions:
-            name, email, phone, type, amount = t
+        for t in transactions or []:
+            name, email, phone, type, amount = t['investor_name'], t['investor_email'], t['investor_phone'], t['transaction_type'], t['amount']
             if name not in investor_data:
                 investor_data[name] = {
                     'name': name,
@@ -606,22 +489,16 @@ def investor_ledger(name):
         return redirect(url_for('dashboard'))
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM investment_transactions WHERE investor_name = ? ORDER BY created_at DESC', (name,))
-        transactions = cursor.fetchall()
+        transactions = execute_query('SELECT * FROM investment_transactions WHERE investor_name = %s ORDER BY created_at DESC', (name,), fetch_all=True)
         
         # Calculate totals
-        total_invested = sum(t['amount'] for t in transactions if t['transaction_type'] == 'invest')
-        total_withdrawn = sum(t['amount'] for t in transactions if t['transaction_type'] == 'withdraw')
+        total_invested = sum(t['amount'] for t in (transactions or []) if t['transaction_type'] == 'invest')
+        total_withdrawn = sum(t['amount'] for t in (transactions or []) if t['transaction_type'] == 'withdraw')
         balance = total_invested - total_withdrawn
-        
-        conn.close()
         
         return render_template('investor_ledger.html', 
                              investor_name=name, 
-                             transactions=transactions,
+                             transactions=transactions or [],
                              total_invested=total_invested,
                              total_withdrawn=total_withdrawn,
                              balance=balance)
@@ -630,9 +507,18 @@ def investor_ledger(name):
         return redirect(url_for('investors'))
 
 if __name__ == '__main__':
-    # Ensure upload directory exists
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
+    # Test database connection on startup
+    if test_connection():
+        print("Database connection test successful")
+    else:
+        print("Database connection test failed")
+    
+    # Ensure upload directory exists (only for local development)
+    if not os.environ.get('RENDER'):  # Only create locally, not on Render
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
     
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    # Use production settings on Render
+    debug = False if os.environ.get('RENDER') else True
+    app.run(debug=debug, host='0.0.0.0', port=port)
