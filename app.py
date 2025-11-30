@@ -27,8 +27,10 @@ def test():
 def login():
     return '''
     <h1>Login page - basic version working!</h1>
-    <p><a href="/">Back to Home</a></p>
-    <p><a href="/dashboard">Dashboard</a></p>
+    <br><br>
+    <a href="/" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Back to Home</a>
+    <br><br>
+    <a href="/dashboard" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Dashboard</a>
     '''
 
 @app.route('/dashboard')
